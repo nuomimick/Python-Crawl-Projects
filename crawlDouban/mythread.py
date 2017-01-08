@@ -28,10 +28,12 @@ if __name__ == '__main__':
         print('hello',something)
         return something
 
+    ths = []
     # 创建新线程
     thread = myThread(hello,"world")
-    thread.name = 'mythread'#设置线程名字
+    ths.append(thread)
+    #thread.name = 'mythread'#设置线程名字
     print(thread.getName())#输出线程名字
     # 开启线程
     thread.start()
-    print(thread.return_value)#获得线程返回值
+    #print(thread.return_value)#获得线程返回值
