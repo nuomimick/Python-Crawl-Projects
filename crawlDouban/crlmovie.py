@@ -36,14 +36,21 @@ class crawlMovies():
 					seen.add(link)
 					crawl_queue.append(link)
 
-	def download(self,url):
-		rsp = requests.get(url)
+	def download(self,url,timeout=3):
+		rsp = requests.get(url,timeout=timeout)
 		html = etree.HTML(rsp.text)
 		return html
 
 	def crl_content(self,html):
+<<<<<<< HEAD
 		title = html.xpath('//title/text()')
 		print(title)
+=======
+		title = html.xpath('//span[@property="v:itemreviewed"]/text()')[0]
+		year = html.xpath('//span[@class="year"]/text()')[0]
+		with open('data.dat','a',encoding='utf-8') as f:
+			f.write('{} {}\n'.format(title,year))
+>>>>>>> 081dcb744d626d5b6e674cf5177ed49f5a7acae2
 
 	def get_links(self,html):
 		rst = html.xpath('//a/@href')
