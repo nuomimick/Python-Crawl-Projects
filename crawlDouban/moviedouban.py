@@ -102,6 +102,7 @@ class CrlMovie():
 
 
 	def contentOfMovie(self,dct):
+		'''抓页面内容'''
 		url = dct['href']
 		rsp = self.session.get(url,proxies=self.proxy)
 		while rsp.status_code == 403:
