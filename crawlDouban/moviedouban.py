@@ -3,6 +3,41 @@ from lxml import etree
 from multiprocessing.dummy import Pool
 from pymongo import MongoClient
 import re
+import pandas as pd
+
+class CrlProxyIP:
+	"""爬取代理IP"""
+	def __init__(self):
+		self.url = 'http://www.xicidaili.com/nn'#某代理ip网址
+		self.session = requests.Session()
+		self.pd_ips = pd.DataFrame({},columns=['ip','port'])
+
+	def crlips(self,n=1):
+		'''抓取一页的ip,n为页数'''
+		headers = {'user-agent':'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36'}
+		for i in range(1,n+1):
+			url = self.url + '/' + str(i)
+			rsp = self.session.get(url,headers=headers)
+			html = etree.HTML(rsp.text)
+			trs = html.xpath('//tr[@class]')
+			ips = [(tr.xpath('.//td')[1].text, tr.xpath('.//td')[2].text) for tr in trs]
+			pool = Pool(50)
+			pool.map(self.verifies,ips)
+		self.pd_ips.to_csv('proxy_ip.csv',index=False)
+			
+					
+		
+	def verifies(self,ip):
+		'''验证ip是否可用'''
+		url = 'http://ip.chinaz.com/getip.aspx'
+		proxy = {'http':'http://{}:{}'.format(ip[0],ip[1])}
+		try:
+			rsp = self.session.get(url,proxies=proxy,timeout=2)
+			df = pd.DataFrame([[ip[0],ip[1]]],columns=['ip','port'])
+			self.pd_ips = self.pd_ips.append(df,ignore_index=True)
+		except Exception as e:
+			#print(ip,e)#此ip不可用
+			pass
 
 
 
@@ -16,15 +51,16 @@ class CrlMovieUrls():
 		clctname = 'mvdata'
 		self.collection = db[clctname]#选择集合
 
-		burl = 'https://movie.douban.com/tag/电影%20'
+		burl = 'https://movie.douban.com/tag/'
 		self.tagurls = map(lambda p:burl+p,tags)
 
 	def getPageNum(self,tagurl):
 		'''获取总页数'''
 		rsp = requests.get(tagurl)
-		html = etree.HTML(rsp.text)
-		pn = html.xpath('//span[@class="thispage"]/@data-total-page')[0]#总页数
-		return int(pn)
+		html = etree.HTML(rsp.text) 
+		pn = html.xpath('//span[@class="thispage"]/@data-total-page')#总页数
+		print(pn)
+		return int(pn[0])
 
 	def urlsOfOnePage(self,start,type='T'):
 		'''
@@ -44,7 +80,7 @@ class CrlMovieUrls():
 		'''全部页数的链接'''
 		pn = self.getPageNum(tagurl)
 		self.url = tagurl
-		pool = Pool(10)
+		pool = Pool(20)
 		pool.map(self.urlsOfOnePage,range(pn))
 
 	def urlsOfAllTags(self):
@@ -62,51 +98,63 @@ class CrlMovie():
 		clctname = 'mvdata'
 		self.collection = db[clctname]#选择集合
 
+		self.session = requests.Session()
+
+
 	def contentOfMovie(self,dct):
 		url = dct['href']
-		title = dct['title']
-		rsp = requests.get(url)
+		rsp = self.session.get(url,proxies=self.proxy)
+		while rsp.status_code == 403:
+			self.proxy = self.proxies.pop()
+			rsp = self.session.get(url,proxies=self.proxy_ip)
 		html = etree.HTML(rsp.text)
 		ele_div = html.xpath('//div[@id="info"]')[0]#电影信息div
 		str_html = etree.tostring(ele_div,encoding='utf-8').decode()#转成字符串
+		title = ele_div.xpath('//span[@property = "v:itemreviewed"]/text()')[0]#更新title
+		year = ele_div.xpath('//span[@class="year"]/text()')[0]
 		director = '/'.join(ele_div.xpath('.//span[text() = "导演"]/following-sibling::*[1]/a/text()'))#导演
 		scenarist = '/'.join(ele_div.xpath('.//span[text() = "编剧"]/following-sibling::*[1]/a/text()'))#编剧
 		actor = '/'.join(ele_div.xpath('.//span[text() = "主演"]/following-sibling::*[1]/a/text()'))#主演
 		tp = '/'.join(ele_div.xpath('.//span[@property = "v:genre"]/text()'))#类型
 		state = re.compile(r'制片国家/地区:</span> (.*?)<br/>').search(str_html).group(1)#地区
-		language = re.compile(r'语言:</span> (.*?)<br/>').search(str_html).group(1)#语言
 		time = '/'.join(ele_div.xpath('.//span[@property="v:initialReleaseDate"]/text()'))#上映时间
-		runtime = ele_div.xpath('.//span[@property="v:runtime"]/text()')[0]#片长
-		name = re.compile(r'又名:</span> (.*?)<br/>').search(str_html).group(1)#又名
-		link = ele_div.xpath('.//span[text()="IMDb链接:"]/following-sibling::*[1]/@href')[0]#IMDb链接
+		try:
+			language = re.compile(r'语言:</span> (.*?)<br/>').search(str_html).group(1)#语言
+		except AttributeError:
+			language = None
+		try:
+			runtime = ele_div.xpath('.//span[@property="v:runtime"]/text()')[0]#片长
+		except IndexError:
+			runtime = None
+		try:
+			name = re.compile(r'又名:</span> (.*?)<br/>').search(str_html).group(1)#又名
+		except AttributeError:
+			name = None
+		try:
+			link = ele_div.xpath('.//span[text()="IMDb链接:"]/following-sibling::*[1]/@href')[0]#IMDb链接
+		except IndexError:
+			link = None
 		related_info = '/'.join(map(lambda s:s.strip(),html.xpath('//div[@class="related-info"]//span[@property="v:summary"]/text()')))#剧情简介
 
-		dc = dict(zip(('director','scenarist','actor','tp','state','language','time','runtime','name','link','related_info'),
-			(director,scenarist,actor,tp,state,language,time,runtime,name,link,related_info)))
+		dc = dict(zip(('title','year','director','scenarist','actor','tp','state','language','time','runtime','name','link','related_info'),
+			(title,year,director,scenarist,actor,tp,state,language,time,runtime,name,link,related_info)))
 		
 		self.collection.update_one({'title':title,'href':url},{'$set':dc})
-		# print(director)
-		# print(scenarist)
-		# print(actor)
-		# print(tp)
-		# print(state)
-		# print(language)
-		# print(time)
-		# print(runtime)
-		# print(name)
-		# print(link)
-		# print(related_info)
 
 	def contentOfAllMovies(self):
-		pool = Pool(10)
+		#获取代理ip
+
+		pool = Pool(50)
 		pool.map(self.contentOfMovie,self.collection.find())
 
 if __name__ == '__main__':
-	cmu = CrlMovieUrls(['2015','2014','2013'])
-	cmu.urlsOfAllTags()
-	cm = CrlMovie()
-	cm.contentOfAllMovies()
-	
+	# cmu = CrlMovieUrls(['2016','2015','2014'])
+	# cmu.urlsOfAllTags()
+	# cm = CrlMovie()
+	# cm.contentOfAllMovies()
+	cip = CrlProxyIP()
+	cip.crlips()
+
 
 	
 		
