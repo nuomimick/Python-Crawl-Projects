@@ -25,7 +25,7 @@ class CrlProxyIP:
 	
 	def crlnext(self):
 		self.curPage += 1
-		crlips(self.curPage)
+		self.crlips(self.curPage)
 		
 	def verify_ip(self,ips):
 		ip = ips[0]
@@ -39,9 +39,10 @@ class CrlProxyIP:
 		try:
 			rsp = self.session.get(url,proxies=proxy,timeout=2)
 		except Exception as e:
-			print('此ip {}, port {}不可用'.format(ip,port))#此ip不可用
+			#print('此ip {}, port {}不可用'.format(ip,port))#此ip不可用
 			return False
 		else:
+			#print(rsp.text)
 			return ip,port
 			
 if __name__ == '__main__':
