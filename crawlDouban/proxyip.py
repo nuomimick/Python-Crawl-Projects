@@ -1,9 +1,14 @@
+import requests
+from lxml import etree
+from multiprocessing.dummy import Pool
+import pandas as pd
+
 class CrlProxyIP:
 	"""爬取代理IP"""
 	def __init__(self):
 		self.url = 'http://www.xicidaili.com/nn'#某代理ip网址
 		self.session = requests.Session()
-		self.pd_ips = pd.DataFrame({},columns=['ip','port'])
+		self.pd_ips = pd.DataFrame({})
 
 	def crlips(self,n=1):
 		'''抓取一页的ip,n为第几页'''
@@ -15,18 +20,15 @@ class CrlProxyIP:
 		ips = [(tr.xpath('.//td')[1].text, tr.xpath('.//td')[2].text) for tr in trs]
 		pool = Pool(50)
 		pool.map(self.verifies,ips)
-
-		self.pd_ips.to_csv('proxy_ip.csv',index=False)
 			
-	def verifies(self,ip):
+	def verify_ip(self,ip,port):
 		'''验证ip是否可用'''
 		url = 'http://ip.chinaz.com/getip.aspx'
-		proxy = {'http':'http://{}:{}'.format(ip[0],ip[1])}
+		proxy = {'http':'http://{}:{}'.format(ip,port)}
 		try:
 			rsp = self.session.get(url,proxies=proxy,timeout=2)
-			df = pd.DataFrame([[ip[0],ip[1]]],columns=['ip','port'])
-			self.pd_ips = self.pd_ips.append(df,ignore_index=True)
 		except Exception as e:
-			#print(ip,e)#此ip不可用
-			pass
+			print('此ip {}不可用'.format(ip))#此ip不可用
+			return False
 		else:
+			return ip,port
