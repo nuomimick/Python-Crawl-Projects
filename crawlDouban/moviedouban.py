@@ -9,22 +9,24 @@ import proxyip
 
 class CrlMovieUrls():
 	"""爬取豆瓣电影"""
-	def __init__(self, tags):
-		client = MongoClient('localhost',27017)#链接
-		dbname = 'test'
-		db = client[dbname]#选择数据库
-		clctname = 'mvdata'
-		self.collection = db[clctname]#选择集合
-
+	def __init__(self, tags, saveType):
+		if saveType == 'mongodb':
+			client = MongoClient('localhost',27017)#链接
+			dbname = 'test'
+			db = client[dbname]#选择数据库
+			clctname = 'mvdata'
+			self.collection = db[clctname]#选择集合
+		
+		self.df = pd.DataFrame({})
 		burl = 'https://movie.douban.com/tag/'
 		self.tagurls = map(lambda p:burl+p,tags)
+		
 
 	def getPageNum(self,tagurl):
 		'''获取总页数'''
 		rsp = requests.get(tagurl)
 		html = etree.HTML(rsp.text) 
 		pn = html.xpath('//span[@class="thispage"]/@data-total-page')#总页数
-		print(pn)
 		return int(pn[0])
 
 	def urlsOfOnePage(self,start,type='T'):
@@ -36,23 +38,24 @@ class CrlMovieUrls():
 		rsp = requests.get(url)
 		html = etree.HTML(rsp.text)
 		trs = html.xpath('//tr[@class="item"]//a[@class="nbg"]')
-		for tr in trs:
-			href = tr.xpath('./@href')[0]
-			title = tr.xpath('./@title')[0]
-			self.collection.insert_one({'title':title,'href':href})
+		data = [tr.xpath('./@href')[0], tr.xpath('./@title')[0] for tr in trs]
+		return pd.DataFrame(data,columns=['url','title'])
 
 	def urlsOfAllPages(self,tagurl):
 		'''全部页数的链接'''
 		pn = self.getPageNum(tagurl)
 		self.url = tagurl
 		pool = Pool(20)
-		pool.map(self.urlsOfOnePage,range(pn))
+		df_list = pool.map(self.urlsOfOnePage,range(pn))
+		return pd.concat(df_list,index=False)
 
 	def urlsOfAllTags(self):
 		'''全部标签的链接'''
+		df = pd.DataFrame({})
 		for tagurl in self.tagurls:
-			self.urlsOfAllPages(tagurl)
-
+			df.append(self.urlsOfAllPages(tagurl))
+		return df
+		
 
 class CrlMovie():
 	'''抓取电影内容'''
