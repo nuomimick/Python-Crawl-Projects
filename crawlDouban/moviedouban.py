@@ -4,6 +4,8 @@ from multiprocessing.dummy import Pool
 from pymongo import MongoClient
 import re
 import pandas as pd
+import proxyip
+
 
 class CrlMovieUrls():
 	"""爬取豆瓣电影"""
@@ -62,6 +64,10 @@ class CrlMovie():
 		self.collection = db[clctname]#选择集合
 
 		self.session = requests.Session()
+		
+		pxy_ip = CrlProxyIP()
+		self.proxies = pxy_ip.crlips()
+		self.proxy = self.proxies.pop()
 
 
 	def contentOfMovie(self,dct):
@@ -69,8 +75,11 @@ class CrlMovie():
 		url = dct['href']
 		rsp = self.session.get(url,proxies=self.proxy)
 		while rsp.status_code == 403:
-			self.proxy = self.proxies.pop()
-			rsp = self.session.get(url,proxies=self.proxy_ip)
+			if self.proxies:
+				self.proxy = self.proxies.pop()
+				rsp = self.session.get(url,proxies=self.proxy_ip)
+			else:
+				self.proxies = pxy_ip.crlnext()
 		html = etree.HTML(rsp.text)
 		ele_div = html.xpath('//div[@id="info"]')[0]#电影信息div
 		str_html = etree.tostring(ele_div,encoding='utf-8').decode()#转成字符串
@@ -106,8 +115,6 @@ class CrlMovie():
 		self.collection.update_one({'title':title,'href':url},{'$set':dc})
 
 	def contentOfAllMovies(self):
-		#获取代理ip
-
 		pool = Pool(50)
 		pool.map(self.contentOfMovie,self.collection.find())
 

@@ -11,6 +11,7 @@ class CrlProxyIP:
 
 	def crlips(self,n=1):
 		'''抓取一页的ip,n为第几页'''
+		self.curPage = n
 		headers = {'user-agent':'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36'}
 		url = self.url + '/' + str(n)
 		rsp = self.session.get(url,headers=headers)
@@ -20,8 +21,12 @@ class CrlProxyIP:
 		pool = Pool(50)
 		ips = pool.map(self.verify_ip,ips_ports)
 		efc_ips = filter(lambda p:p,ips)#ip can use
-		return efc_ips
-			
+		return list(efc_ips)
+	
+	def crlnext(self):
+		self.curPage += 1
+		crlips(self.curPage)
+		
 	def verify_ip(self,ips):
 		ip = ips[0]
 		port = ips[1]
