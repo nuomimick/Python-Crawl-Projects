@@ -74,31 +74,30 @@ class CrlMovie():
             "Accept-Language": "zh-CN, zh; q=0.8, en; q=0.6",
         }
 
-		self.pxy_ip = CrlProxyIP()
+		self.pxy_ip = CrlProxyIP('https')
 		self.proxies = self.pxy_ip.crlips()
-		proxy = self.proxies.pop()
-		self.proxy = {'https':'http://{}:{}'.format(proxy[0],proxy[1])}
+		self.proxy = self.proxies.pop()
 		print('finish crawl proxy ip')
-
-
+	
+	
+	def download(url,proxies):
+		r = self.session.get(url,proxies=proxies)
+		if r.status_code == 200:
+			return r.text
+		else:
+			return False
+	
 	def contentOfMovie(self,item):
 		'''抓页面内容'''
 		url = item[1]
-		print(self.proxy)
-		try:
-			rsp = self.session.get(url,proxies=self.proxy)
-			while rsp.status_code == 403:
-				if self.proxies:
-					proxy = self.proxies.pop()
-					self.proxy = {'https':'http://{}:{}'.format(proxy[0],proxy[1])}
-					rsp = self.session.get(url,proxies=self.proxy)
-				else:
-					self.proxies = self.pxy_ip.crlnext()
-		except Exception:
-			proxy = self.proxies.pop()
-			self.proxy = {'https':'http://{}:{}'.format(proxy[0],proxy[1])}
-			rsp = self.session.get(url,proxies=self.proxy)
-		html = etree.HTML(rsp.text)
+		result = download(url,self.proxy)
+		while not result:
+			if self.proxies:
+				self.proxy = self.proxies.pop()
+				result = download(url,self.proxy)
+			else:
+				self.proxies = self.pxy_ip.crlnext()
+		html = etree.HTML(result)
 		ele_div = html.xpath('//div[@id="info"]')[0]#电影信息div
 		str_html = etree.tostring(ele_div,encoding='utf-8').decode()#转成字符串
 		title = ele_div.xpath('//span[@property = "v:itemreviewed"]/text()')[0]#更新title
@@ -152,14 +151,14 @@ if __name__ == '__main__':
 	# proxies = pxy_ip.crlips()
 	# pd.DataFrame(proxies,columns=['ip','port']).to_csv('ips.csv')
 	
-	s = requests.Session()
-	proxy = {'https':'http://{}:{}'.format('202.111.175.97','8080')}
+	# s = requests.Session()
+	# proxy = {'https':'http://{}:{}'.format('202.111.175.97','8080')}
 	
-	rsp = s.get('http://www.baidu.com',proxies=proxy)
-	print(rsp.status_code)
+	# rsp = s.get('http://www.baidu.com',proxies=proxy)
+	# print(rsp.status_code)
 	
-	rsp = s.get('https://movie.douban.com/',proxies=proxy)
-	print(rsp.status_code)
+	# rsp = s.get('https://movie.douban.com/',proxies=proxy)
+	# print(rsp.status_code)
 	
 
 
