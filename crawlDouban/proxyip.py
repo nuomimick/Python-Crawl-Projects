@@ -26,7 +26,7 @@ class CrlProxyIP:
 		pool = Pool(50)
 		ips = pool.map(self.verify_ip,ips_ports)
 		efc_ips = filter(lambda p:p,ips)#ip can use
-		efc_ips = map(lambda ip:{self.prefix:'{}://{}:{}'.format(self.prefix,ip[0],ip[1])})
+		efc_ips = map(lambda ip:{self.prefix:'{}://{}:{}'.format(self.prefix,ip[0],ip[1])},efc_ips)
 		return list(efc_ips)
 	
 	def crlnext(self,proxies=None):
