@@ -5,19 +5,26 @@ import pandas as pd
 
 class CrlProxyIP:
 	"""爬取代理IP"""
-	def __init__(self):
-		self.url = 'http://www.xicidaili.com/nn'#某代理ip网址
+	def __init__(self,type='https'):
+		if type == 'https':
+			self.url = 'http://www.xicidaili.com/wn/'
+			self.prefix = 'https'
+		elif type == 'http':
+			self.url = 'http://www.xicidaili.com/wt/'
+			self.prefix = 'http'
+			
 		self.session = requests.Session()
 
 	def crlips(self,n=1):
 		'''抓取一页的ip,n为第几页'''
 		self.curPage = n
-		headers = {'user-agent':'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36'}
-		url = self.url + '/' + str(n)
-		rsp = self.session.get(url,headers=headers)
+		url = self.url + str(n)
+		#proxy = {'https':'http://{}:{}'.format('202.111.175.97','8080')}
+		rsp = self.session.get(url)
+		print(rsp.status_code)
 		html = etree.HTML(rsp.text)
 		trs = html.xpath('//tr[@class]')
-		ips_ports = [(tr.xpath('.//td')[1].text,tr.xpath('.//td')[2].text) for tr in trs]
+		ips_ports = [(tr.xpath('.//td')[1].text,tr.xpath('.//td')[2].text) for tr in trs if tr.xpath('.//td')[4].text == '高匿']
 		pool = Pool(50)
 		ips = pool.map(self.verify_ip,ips_ports)
 		efc_ips = filter(lambda p:p,ips)#ip can use
@@ -35,7 +42,7 @@ class CrlProxyIP:
 	def verify_ip_port(self,ip,port):
 		'''验证ip是否可用'''
 		url = 'http://ip.chinaz.com/getip.aspx'
-		proxy = {'http':'http://{}:{}'.format(ip,port)}
+		proxy = {self.prefix:'{}://{}:{}'.format(self.prefix,ip,port)}
 		try:
 			rsp = self.session.get(url,proxies=proxy,timeout=2)
 		except Exception as e:
@@ -46,5 +53,5 @@ class CrlProxyIP:
 			return ip,port
 			
 if __name__ == '__main__':
-	pro_ip = CrlProxyIP()
-	pro_ip.crlips()
+	pro_ip = CrlProxyIP('http')
+	print(pro_ip.crlips())

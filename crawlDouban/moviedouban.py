@@ -144,9 +144,22 @@ if __name__ == '__main__':
 	# cmu = CrlMovieUrls(['2016','2015','2014'])
 	# cmu.urlsOfAllTags().to_csv('urldata.csv',index=False,encoding='utf-8')
 
-	df = pd.read_csv('urldata.csv')
-	cm = CrlMovie()
-	cm.contentOfAllMovies(df)
+	# df = pd.read_csv('urldata.csv')
+	# cm = CrlMovie()
+	# cm.contentOfAllMovies(df)
+	
+	# pxy_ip = CrlProxyIP(type='https')
+	# proxies = pxy_ip.crlips()
+	# pd.DataFrame(proxies,columns=['ip','port']).to_csv('ips.csv')
+	
+	s = requests.Session()
+	proxy = {'https':'http://{}:{}'.format('202.111.175.97','8080')}
+	
+	rsp = s.get('http://www.baidu.com',proxies=proxy)
+	print(rsp.status_code)
+	
+	rsp = s.get('https://movie.douban.com/',proxies=proxy)
+	print(rsp.status_code)
 	
 
 
