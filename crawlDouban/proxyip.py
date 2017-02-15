@@ -1,7 +1,6 @@
 import requests
 from lxml import etree
 from multiprocessing.dummy import Pool
-import pandas as pd
 
 class CrlProxyIP:
 	"""爬取代理IP"""
@@ -15,12 +14,11 @@ class CrlProxyIP:
 			
 		self.session = requests.Session()
 
-	def crlips(self,n=1):
+	def crlips(self,n=1,proxies=None):
 		'''抓取一页的ip,n为第几页'''
 		self.curPage = n
 		url = self.url + str(n)
-		#proxy = {'https':'http://{}:{}'.format('202.111.175.97','8080')}
-		rsp = self.session.get(url)
+		rsp = self.session.get(url,proxies=proxies)
 		print(rsp.status_code)
 		html = etree.HTML(rsp.text)
 		trs = html.xpath('//tr[@class]')
@@ -30,9 +28,9 @@ class CrlProxyIP:
 		efc_ips = filter(lambda p:p,ips)#ip can use
 		return list(efc_ips)
 	
-	def crlnext(self):
+	def crlnext(self,proxies=None):
 		self.curPage += 1
-		self.crlips(self.curPage)
+		return self.crlips(self.curPage,proxies)
 		
 	def verify_ip(self,ips):
 		ip = ips[0]
@@ -53,5 +51,5 @@ class CrlProxyIP:
 			return ip,port
 			
 if __name__ == '__main__':
-	pro_ip = CrlProxyIP('http')
-	print(pro_ip.crlips())
+	pro_ip = CrlProxyIP('https')
+	pro_ip.crlips()
