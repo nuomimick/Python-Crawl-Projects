@@ -13,6 +13,10 @@ class CrlProxyIP:
 			self.prefix = 'http'
 			
 		self.session = requests.Session()
+		self.ips = self.crlips()
+
+	def update(self):
+		self.ips.extend(self.crlnext())
 
 	def crlips(self,n=1,proxies=None):
 		'''抓取一页的ip,n为第几页'''
@@ -53,4 +57,4 @@ class CrlProxyIP:
 			
 if __name__ == '__main__':
 	pro_ip = CrlProxyIP('https')
-	pro_ip.crlips()
+	print(pro_ip.crlips())
