@@ -5,6 +5,9 @@ def drop_duplicates(file,encoding):
 	df = pd.read_csv(file,encoding=encoding,names=headers)
 	df = df.drop_duplicates(['url'])
 	df.to_csv(file,index=False,encoding=encoding,header=False)
+	
+	
 
 if __name__ == '__main__':
-	drop_duplicates('moviedata.csv','utf-8')
+	#drop_duplicates('moviedata.csv','utf-8')
+	
