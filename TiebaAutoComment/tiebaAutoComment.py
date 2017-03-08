@@ -47,7 +47,7 @@ s.headers = {
 s.cookies.update(s_cookies)
 
 while True:
-    url = 'https://tieba.baidu.com/p/4857337116'
+    url = 'https://tieba.baidu.com/p/xxxx'
     r = s.get(url)
     html = etree.HTML(r.text)
     data_field = json.loads(html.xpath('//*[@id="j_p_postlist"]/div[3]/@data-field')[0])
