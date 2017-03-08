@@ -15,8 +15,8 @@ webview = QtWebKit.QWebView()
 webview.show()
 download(webview,'https://passport.baidu.com/v2/?login')
 frame = webview.page().mainFrame()
-frame.findFirstElement('#TANGRAM__PSP_3__userName').setAttribute('value','nuomimick')
-frame.findFirstElement('#TANGRAM__PSP_3__password').setAttribute('value','zhou.6,3')
+frame.findFirstElement('#TANGRAM__PSP_3__userName').setAttribute('value','')
+frame.findFirstElement('#TANGRAM__PSP_3__password').setAttribute('value','')
 frame.findFirstElement('#TANGRAM__PSP_3__submit').evaluateJavaScript("this.click()")
 #等待结果
 elements = QtWebKit.QWebElement()
@@ -47,7 +47,7 @@ s.headers = {
 s.cookies.update(s_cookies)
 
 while True:
-    url = 'https://tieba.baidu.com/p/4857337116'
+    url = 'https://tieba.baidu.com/p/xxxx'
     r = s.get(url)
     html = etree.HTML(r.text)
     data_field = json.loads(html.xpath('//*[@id="j_p_postlist"]/div[3]/@data-field')[0])
