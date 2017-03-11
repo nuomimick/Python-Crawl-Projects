@@ -1,4 +1,4 @@
-from PyQt4 import QtGui, QtCore, QtNetwork,QtWebKit
+from PyQt5 import QtGui, QtCore, QtNetwork,QtWidgets,QtWebKitWidgets,QtWebKit
 import requests,re,json
 from lxml import etree
 import time
@@ -10,14 +10,14 @@ def download(webview,url):
 	webview.load(req)
 	loop.exec_()
 
-app = QtGui.QApplication([])
-webview = QtWebKit.QWebView()
+app = QtWidgets.QApplication([])
+webview = QtWebKitWidgets.QWebView()
 webview.show()
 download(webview,'https://passport.baidu.com/v2/?login')
 frame = webview.page().mainFrame()
-frame.findFirstElement('#TANGRAM__PSP_3__userName').setAttribute('value','')
-frame.findFirstElement('#TANGRAM__PSP_3__password').setAttribute('value','')
-frame.findFirstElement('#TANGRAM__PSP_3__submit').evaluateJavaScript("this.click()")
+# frame.findFirstElement('#TANGRAM__PSP_3__userName').setAttribute('value','')
+# frame.findFirstElement('#TANGRAM__PSP_3__password').setAttribute('value','')
+# frame.findFirstElement('#TANGRAM__PSP_3__submit').evaluateJavaScript("this.click()")
 #等待结果
 elements = QtWebKit.QWebElement()
 while elements.isNull():
@@ -47,7 +47,7 @@ s.headers = {
 s.cookies.update(s_cookies)
 
 while True:
-    url = 'https://tieba.baidu.com/p/xxxx'
+    url = 'http://tieba.baidu.com/p/5016192642'
     r = s.get(url)
     html = etree.HTML(r.text)
     data_field = json.loads(html.xpath('//*[@id="j_p_postlist"]/div[3]/@data-field')[0])
@@ -56,7 +56,7 @@ while True:
     fid = re.compile("fid:'(.*?)'").search(r.text).group(1)
     tid = url[-10:]
     quote_id = str(data_field['content']['post_id'])
-    tbs = re.compile("tbs:.'(.*?)'").search(r.text).group(1)
+    tbs = re.compile('tbs.*?:."(.*?)"').search(r.text).group(1)
     repostid = quote_id
 
     url_add = 'http://tieba.baidu.com/f/commit/post/add'
@@ -86,8 +86,8 @@ while True:
 
     r = s.get(url)
     html = etree.HTML(r.text)
-    tbs = re.compile("tbs:.'(.*?)'").search(r.text).group(1)
-    user_id = re.compile('"user_id":."(.*?)"').search(r.text).group(1)
+    tbs = re.compile('tbs.*?:."(.*?)"').search(r.text).group(1)
+    user_id = re.compile('"user_id":.*?(.*?),').search(r.text).group(1)
 
     comment_url = 'http://tieba.baidu.com/p/totalComment?tid={}&fid={}'.format(tid,fid)
     text = s.get(comment_url).text

@@ -7,7 +7,7 @@ kw = html.xpath('//*[@id="container"]/div/div[1]/div[2]/div[2]/a[1]/@title')[0]
 fid = re.compile("fid:'(.*?)'").search(r.text).group(1)
 tid = url[-10:]
 quote_id = str(data_field['content']['post_id'])
-tbs = re.compile("tbs:.'(.*?)'").search(r.text).group(1)
+tbs = re.compile('tbs.*?:."(.*?)"').search(r.text).group(1)
 repostid = quote_id
 
 url_add = 'http://tieba.baidu.com/f/commit/post/add'
@@ -37,8 +37,8 @@ time.sleep(3)
 
 r = s.get(url)
 html = etree.HTML(r.text)
-tbs = re.compile("tbs:.'(.*?)'").search(r.text).group(1)
-user_id = re.compile('"user_id":."(.*?)"').search(r.text).group(1)
+tbs = re.compile('tbs.*?:."(.*?)"').search(r.text).group(1)
+user_id = re.compile('"user_id":.*?(.*?),').search(r.text).group(1)
 
 comment_url = 'http://tieba.baidu.com/p/totalComment?tid={}&fid={}'.format(tid,fid)
 text = s.get(comment_url).text
